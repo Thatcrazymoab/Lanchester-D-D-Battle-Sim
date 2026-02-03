@@ -31,27 +31,39 @@ const runContinuousSimulation = (
   const a0 = unitA.count;
   const b0 = unitB.count;
 
-  // For Square Law, we can use Analytical Solutions (Hyperbolic functions)
-  // A(t) = A0 cosh(sqrt(ab)t) - B0 sqrt(a/b) sinh(sqrt(ab)t)
+  // For Square Law, we can use Analytical Solutions.
+  // Using Exponential form: A(t) = C1*e^(kt) + C2*e^(-kt)
   if (law === LawType.SQUARE) {
-    const sqrtAB = Math.sqrt(alpha * beta);
+    const k = Math.sqrt(alpha * beta);
     // Avoid division by zero
-    if (sqrtAB === 0) return { steps: [{time: 0, countA: a0, countB: b0}], duration: 0, winner: 'Draw' };
+    if (k === 0) return { steps: [{time: 0, countA: a0, countB: b0}], duration: 0, winner: 'Draw' };
     
-    const factorA = Math.sqrt(alpha / beta);
-    const factorB = Math.sqrt(beta / alpha);
+    // Constants for A(t)
+    // A(0) = a0  => C1 + C2 = a0
+    // A'(0) = -alpha * b0 => k(C1 - C2) = -alpha * b0
+    const termA = (alpha * b0) / k;
+    const c1_a = 0.5 * (a0 - termA);
+    const c2_a = 0.5 * (a0 + termA);
+
+    // Constants for B(t)
+    // B(0) = b0 => C3 + C4 = b0t
+    // B'(0) = -beta * a0 => k(C3 - C4) = -beta * a0
+    const termB = (beta * a0) / k;
+    const c1_b = 0.5 * (b0 - termB);
+    const c2_b = 0.5 * (b0 + termB);
 
     // Dynamic step size for plotting smoothness
     const dt = 0.1; 
     
     for (let t = 0; t <= maxTime; t += dt) {
       const timeVal = parseFloat(t.toFixed(2));
-      const cosh = Math.cosh(sqrtAB * t);
-      const sinh = Math.sinh(sqrtAB * t);
+      
+      const e_kt = Math.exp(k * t);
+      const e_neg_kt = Math.exp(-k * t);
 
-      // Analytical Equations
-      let at = a0 * cosh - b0 * factorA * sinh;
-      let bt = b0 * cosh - a0 * factorB * sinh;
+      // Analytical Equations (Exponential Form)
+      let at = (c1_a * e_kt) + (c2_a * e_neg_kt);
+      let bt = (c1_b * e_kt) + (c2_b * e_neg_kt);
 
       // Check termination
       if (at <= 0 || bt <= 0) {
@@ -121,15 +133,7 @@ const runDiscreteSimulation = (
   let round = 1;
   while (countA > 0 && countB > 0 && round <= maxRounds) {
     // In D&D, initiative matters. We'll assume simultaneous rounds for simplicity of the model comparison,
-    // OR A goes then B goes. Let's do Simultaneous damage application to match the Differential Equation spirit closer,
-    // otherwise First-Turn-Advantage skews heavily against the math.
     
-    // Side A attacks
-    // Square Law assumption: All A can attack.
-    // Linear Law assumption: Only a limited frontage can attack? 
-    // For this app's "Linear" visualization, we usually imply Saturation/AoE.
-    // Let's stick to the standard "Total DPR" logic but floor the results.
-
     // Calculate raw damage output
     let totalDmgA = 0;
     let totalDmgB = 0;
