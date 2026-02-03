@@ -1,0 +1,7 @@
+{
+  "name": "Lanchester D&D Battle Sim IA Graphings",
+  "description": "A visualization tool applying Lanchester's Laws (Linear & Square) to Dungeons & Dragons combat scenarios to model Action Economy.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
